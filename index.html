@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPLDV QUEST - RPG Adventure</title>
+    <style>
+        :root {
+            --bg-color: #f7f1e3;
+            --primary: #70a1ff;
+            --primary-dark: #1e90ff;
+            --secondary: #ff7875;
+            --accent-yellow: #ffeaa7;
+            --accent-green: #55efc4;
+            --card-bg: #ffffff;
+            --text-color: #2d3436;
+            --border-radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid #dfe6e9;
+        }
+
+        header { text-align: center; margin-bottom: 15px; }
+        h1 { color: var(--primary-dark); margin: 5px 0; font-size: 1.8rem; text-shadow: 1px 1px 2px #b2bec3; }
+
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        .form-group { margin-bottom: 12px; text-align: left; }
+        label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 0.9rem; }
+        input[type="text"], input[type="number"] {
+            width: 100%; padding: 10px; border: 2px solid #b2bec3; border-radius: 8px; font-size: 1rem; outline: none;
+        }
+
+        .avatar-container { display: flex; justify-content: space-around; margin: 15px 0; }
+        .avatar-card {
+            border: 3px solid #dfe6e9; border-radius: 12px; padding: 10px; text-align: center; cursor: pointer; width: 30%; background: #f1f2f6; transition: all 0.2s;
+        }
+        .avatar-card.selected { border-color: var(--primary-dark); background: #dff9fb; transform: scale(1.05); }
+        .avatar-card span { font-size: 2.5rem; display: block; }
+
+        .btn {
+            background-color: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 25px; font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; transition: transform 0.1s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-secondary { background-color: var(--secondary); }
+        .btn-green { background-color: var(--accent-green); color: #2d3436; }
+        .btn-accent { background-color: #fdcb6e; color: #2d3436; }
+
+        .stats-bar {
+            display: flex; justify-content: space-between; align-items: center; background: #ffeaa7; padding: 10px 15px; border-radius: 12px; margin-bottom: 15px; font-weight: bold; font-size: 0.85rem;
+        }
+
+        .battle-arena {
+            background: #dfe6e9; border-radius: 12px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border: 2px solid #b2bec3;
+        }
+        .hero-side, .monster-side { text-align: center; width: 40%; }
+        .char-sprite { font-size: 3.5rem; }
+        .hp-bar-bg { background: #ff7675; height: 12px; border-radius: 6px; overflow: hidden; margin-top: 5px; border: 1px solid #d63031; }
+        .hp-bar-fill { background: #55efc4; height: 100%; width: 100%; transition: width 0.3s; }
+
+        .npc-box {
+            background: #f7f1e3; border: 2px solid #eccc68; border-radius: 10px; padding: 10px 15px; margin-bottom: 15px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px;
+        }
+        .npc-icon { font-size: 2rem; }
+
+        .mission-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+        .mission-card { background: #f1f2f6; border: 2px solid #dfe6e9; border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; }
+        .mission-card.locked { opacity: 0.5; cursor: not-allowed; background: #dcdde1; }
+        .mission-card.completed { background: #c7ecee; border-color: #7ed6df; }
+
+        .source-pool {
+            display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: #f8f9fa; border: 2px dashed #a4b0be; border-radius: 10px; min-height: 60px; margin-bottom: 15px;
+        }
+        .match-card {
+            background: #74b9ff; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.85rem; border: 2px solid transparent;
+        }
+        .match-card.active-select {
+            border-color: #d63031; background: #0984e3; transform: scale(1.05); box-shadow: 0 0 8px rgba(0,0,0,0.3);
+        }
+        .target-zone {
+            background: #ffeaa733; border: 2px dashed #fdcb6e; border-radius: 10px; padding: 10px; margin-bottom: 10px; min-height: 60px; cursor: pointer;
+        }
+        .target-zone:hover { background: #ffeaa766; }
+        .target-zone h5 { margin: 0 0 5px 0; color: #d35400; }
+
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .opt-btn { background: #ffffff; border: 2px solid #70a1ff; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .opt-btn.selected { background: var(--primary); color: white; }
+
+        .question-box { background: #74b9ff15; border-left: 5px solid #74b9ff; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95rem; line-height: 1.4; }
+        .feedback { margin-top: 10px; padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; display: none; }
+        .feedback.success { background: #badc58; color: #222; display: block; }
+        .feedback.error { background: #ff7675; color: white; display: block; }
+        .hint-box { background: #ffeaa7; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem; display: none; }
+
+        .tf-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .tf-table th, .tf-table td { border: 1px solid #ccc; padding: 6px; text-align: left; font-size: 0.8rem; }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            40% { transform: translate(1px, -1px) rotate(-1deg); }
+            60% { transform: translate(-1px, 1px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .shaking { animation: shake 0.4s; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <header>
+        <h1>⚔️ SPLDV QUEST ⚔️</h1>
+        <small style="color:#636e72;">Petualangan Matematika Fantasi</small>
+    </header>
+
+    <!-- SCREEN 1: IDENTITAS -->
+    <div id="screen-identity" class="screen active">
+        <h3>Pendaftaran Ksatria</h3>
+        <div class="form-group">
+            <label>Nama</label>
+            <input type="text" id="player-name">
+        </div>
+        <div class="form-group">
+            <label>Sekolah</label>
+            <input type="text" id="player-school">
+        </div>
+        <div class="form-group">
+            <label>Kelas</label>
+            <input type="text" id="player-class">
+        </div>
+
+        <label>Pilih Avatar:</label>
+        <div class="avatar-container">
+            <div class="avatar-card selected" onclick="selectAvatar('⚔️', 'Satria', this)">
+                <span>⚔️</span>
+                <b>Satria</b>
+            </div>
+            <div class="avatar-card" onclick="selectAvatar('🧙‍♂️', 'Penyihir', this)">
+                <span>🧙‍♂️</span>
+                <b>Penyihir</b>
+            </div>
+            <div class="avatar-card" onclick="selectAvatar('🏹', 'Pemanah', this)">
+                <span>🏹</span>
+                <b>Pemanah</b>
+            </div>
+        </div>
+
+        <button class="btn" onclick="submitIdentity()">Mulai Petualangan</button>
+    </div>
+
+    <!-- SCREEN 2: ATURAN -->
+    <div id="screen-rules" class="screen">
+        <h3>📜 Titah Kerajaan (Aturan)</h3>
+        <ul style="text-align:left; font-size:0.9rem; line-height:1.6; background:#f7f1e3; padding:15px 15px 15px 30px; border-radius:8px;">
+            <li>Jelajahi 6 Lokasi Fantasi secara berurutan.</li>
+            <li>Kamu dibekali <b>3 Nyawa ❤️</b>. Jawaban salah akan mengurangi nyawa!</li>
+            <li style="color:#d63031; font-weight:bold;">⚠️ Sistem Anti-Curang Aktif: Dilarang pindah tab! Jika berpindah tab, game akan ter-reset dari awal dan dicatat ke Google Sheet Guru.</li>
+            <li>Progres dan skor kamu otomatis terkirim secara berkala.</li>
+        </ul>
+        <button class="btn btn-green" onclick="startGame()">Saya Siap Bertualang!</button>
+    </div>
+
+    <!-- MAIN GAME -->
+    <div id="main-game" class="screen">
+        <div class="stats-bar">
+            <span>❤️ <span id="stat-lives">3</span></span>
+            <span>⭐ <span id="stat-stars">0</span></span>
+            <span>🪙 <span id="stat-coins">0</span></span>
+            <span>XP: <span id="stat-xp">0</span></span>
+            <span style="background:#ff6b6b; color:white; padding:3px 8px; border-radius:10px;">⏱️ <span id="stat-timer">00:00</span></span>
+        </div>
+
+        <!-- SCREEN MAP -->
+        <div id="screen-map" class="sub-screen">
+            <h3>Peta Dunia Fantasi</h3>
+            <div class="mission-grid" id="mission-grid"></div>
+            <button class="btn btn-secondary" style="margin-top:20px;" onclick="resetGame(true)">Reset Progres</button>
+        </div>
+
+        <!-- GAMEPLAY SCREEN -->
+        <div id="screen-gameplay" class="sub-screen" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h4 id="mission-title" style="margin:0; color:var(--primary-dark)">Judul Lokasi</h4>
+                <button onclick="backToMap()" style="border:none; background:none; cursor:pointer; font-size:1.2rem;">✖️</button>
+            </div>
+            <hr style="border:0; border-top:1px solid #ccc; margin:10px 0;">
+
+            <!-- Battle UI -->
+            <div class="battle-arena">
+                <div class="hero-side">
+                    <div class="char-sprite" id="hero-sprite">⚔️</div>
+                    <b id="hero-name-display">Satria</b>
+                </div>
+                <div style="font-weight:bold; font-size:1.2rem; color:#d63031;">VS</div>
+                <div class="monster-side">
+                    <div class="char-sprite" id="monster-sprite">👹</div>
+                    <b id="monster-name-display">Monster</b>
+                    <div class="hp-bar-bg">
+                        <div class="hp-bar-fill" id="monster-hp"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dialogue -->
+            <div class="npc-box">
+                <div class="npc-icon" id="npc-icon">🧙‍♂️</div>
+                <div id="npc-dialogue">Petunjuk dari Penjaga...</div>
+            </div>
+
+            <div id="gameplay-content"></div>
+
+            <div id="feedback-box" class="feedback"></div>
+            <div id="hint-box" class="hint-box"></div>
+
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn btn-accent" style="width:40%" onclick="showHint()">💡 Petunjuk</button>
+                <button class="btn" style="width:60%" onclick="checkAnswer()">Serang / Jawab</button>
+            </div>
+        </div>
+
+        <!-- COMPLETE -->
+        <div id="screen-complete" class="sub-screen" style="display:none; text-align:center;">
+            <h2>🎉 MISSION COMPLETE! 🎉</h2>
+            <p>Selamat! Kamu telah membebaskan Kerajaan Matematika!</p>
+            <div style="background:#f1f2f6; padding:15px; border-radius:12px; margin:15px 0;">
+                <p><b>Badges:</b> 🏆 Master SPLDV</p>
+                <p><b>Total Skor:</b> <span id="final-score">0</span></p>
+                <p><b>Pelanggaran Pindah Tab:</b> <span id="final-tab-switches">0</span>x</p>
+            </div>
+            <button class="btn btn-green" onclick="resetGame(false)">Main Lagi</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwjs3GPyG3f0QOrZf0to94hfq4EnbSPMteD_YQP50rM0SJZ3XYuAd9ahcNKc-m5RS7bHA/exec";
+
+    let playerData = {
+        name: "", school: "", classGrade: "",
+        avatarSprite: "⚔️", avatarClass: "Satria",
+        lives: 3, xp: 0, coins: 0, stars: 0,
+        unlockedMission: 1, completedMissions: [], tabSwitches: 0
+    };
+
+    let currentMission = 0;
+    let subQuestionIndex = 0;
+    let currentQuestionData = {};
+    let timerInterval = null;
+    let timeRemaining = 0;
+    let monsterHPVal = 100;
+    let selectedCard = null;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+
+        if (type === 'hit') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+        } else if (type === 'wrong') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(100, audioCtx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        }
+    }
+
+    function rand(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    window.onload = function() {
+        loadLocalStorage();
+        setupAntiCheating();
+    };
+
+    function setupAntiCheating() {
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden && playerData.name !== "") {
+                playerData.tabSwitches++;
+                
+                // Kirim laporan kecurangan LENGKAP dengan Nama, Sekolah, dan Kelas SEBELUM data di-reset
+                sendDataToSheet("GUGUR: DETEKSI PINDAH TAB (" + playerData.tabSwitches + "x)");
+                
+                alert("⚠️ DETEKSI KECURANGAN!\nNama: " + playerData.name + "\nKamu terdeteksi berpindah tab!\nLaporan telah dikirim ke Google Sheet Guru dan game di-reset.");
+                
+                // Reset permainan
+                resetGame(false);
+            }
+        });
+    }
+
+    function saveLocalStorage() { localStorage.setItem("spldv_rpg_v2", JSON.stringify(playerData)); }
+    function loadLocalStorage() {
+        const saved = localStorage.getItem("spldv_rpg_v2");
+        if (saved) playerData = JSON.parse(saved);
+    }
+
+    function sendDataToSheet(statusMsg) {
+        if (!SCRIPT_URL || SCRIPT_URL.includes("YOUR_SCRIPT_ID")) return;
+        const payload = {
+            name: playerData.name,
+            school: playerData.school,
+            classGrade: playerData.classGrade,
+            xp: playerData.xp,
+            stars: playerData.stars,
+            coins: playerData.coins,
+            tabSwitches: playerData.tabSwitches,
+            status: statusMsg
+        };
+        fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        }).catch(err => console.error("Data send error:", err));
+    }
+
+    function selectAvatar(sprite, className, el) {
+        document.querySelectorAll(".avatar-card").forEach(c => c.classList.remove("selected"));
+        el.classList.add("selected");
+        playerData.avatarSprite = sprite;
+        playerData.avatarClass = className;
+    }
+
+    function submitIdentity() {
+        const name = document.getElementById("player-name").value.trim();
+        const school = document.getElementById("player-school").value.trim();
+        const classGrade = document.getElementById("player-class").value.trim();
+        if (!name || !school || !classGrade) { alert("Isi semua identitas terlebih dahulu!"); return; }
+        
+        playerData.name = name; playerData.school = school; playerData.classGrade = classGrade;
+        saveLocalStorage();
+        sendDataToSheet("MULAI GAME");
+        switchScreen("screen-rules");
+    }
+
+    function switchScreen(id) {
+        document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+    }
+
+    function startGame() {
+        switchScreen("main-game");
+        updateStats();
+        renderMap();
+    }
+
+    function updateStats() {
+        document.getElementById("stat-lives").innerText = playerData.lives;
+        document.getElementById("stat-stars").innerText = playerData.stars;
+        document.getElementById("stat-coins").innerText = playerData.coins;
+        document.getElementById("stat-xp").innerText = playerData.xp;
+    }
+
+    function startTimer(sec) {
+        clearInterval(timerInterval);
+        timeRemaining = sec;
+        updateTimerDisplay();
+        timerInterval = setInterval(() => {
+            timeRemaining--;
+            updateTimerDisplay();
+            if (timeRemaining <= 0) {
+                clearInterval(timerInterval);
+                alert("⏱️ Waktu Habis! Nyawa berkurang 1.");
+                deductLife();
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const m = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+        const s = (timeRemaining % 60).toString().padStart(2, '0');
+        document.getElementById("stat-timer").innerText = `${m}:${s}`;
+    }
+
+    const MISSIONS = [
+        { id: 1, name: "Gerbang Hutan Mistis", time: 90, monster: "🐺 Serigala Sihir", sprite: "🐺", npc: "🧝‍♀️ Penjaga Hutan", story: "Kelompokkan batu mantra ke tempat PLDV / SPLDV yang tepat!" },
+        { id: 2, name: "Rawa Bisikan Rumus", time: 180, monster: "Katak Rawa", sprite: "🐸", npc: "🧙‍♂️ Penyihir Rawa", story: "Cari koordinat titik lemah monster (nilai x dan y)!" },
+        { id: 3, name: "Pasar Karavan", time: 180, monster: "🧌 Penyamun Pasar", sprite: "🧌", npc: "👳‍♂️ Pedagang Karavan", story: "Bantu hitung harga barang dagangan asli!" },
+        { id: 4, name: "Labirin Takdir", time: 180, monster: "🗿 Golem Batu", sprite: "🗿", npc: "🦅 Burung Bijak", story: "Kelompokkan jalan keluar berdasarkan jumlah solusinya!" },
+        { id: 5, name: "Pelabuhan Kerajaan", time: 210, monster: "🦑 Kraken Samudra", sprite: "🦑", npc: "⚓ Kapten Kerajaan", story: "Hitung armada kavaleri perang sebelum berlayar!" },
+        { id: 6, name: "Istana Raja Kegelapan", time: 300, monster: "👺 Raja Iblis SPLDV", sprite: "👺", npc: "🕊️ Malaikat Penjaga", story: "Jawab teka-teki rahasia Raja Iblis!" }
+    ];
+
+    function renderMap() {
+        document.getElementById("screen-map").style.display = "block";
+        document.getElementById("screen-gameplay").style.display = "none";
+        document.getElementById("screen-complete").style.display = "none";
+
+        const grid = document.getElementById("mission-grid");
+        grid.innerHTML = "";
+        MISSIONS.forEach(m => {
+            const isUnlocked = m.id <= playerData.unlockedMission;
+            const isCompleted = playerData.completedMissions.includes(m.id);
+            const card = document.createElement("div");
+            card.className = `mission-card ${!isUnlocked ? 'locked' : ''} ${isCompleted ? 'completed' : ''}`;
+            card.innerHTML = `<b>${m.name}</b><br><small>${isCompleted ? '✅ Dikalahkan' : isUnlocked ? '🔓 Terbuka' : '🔒 Terkunci'}</small>`;
+            if (isUnlocked) card.onclick = () => loadMission(m.id);
+            grid.appendChild(card);
+        });
+    }
+
+    function backToMap() { clearInterval(timerInterval); renderMap(); }
+
+    function loadMission(id) {
+        currentMission = id;
+        subQuestionIndex = 1;
+        monsterHPVal = 100;
+        const config = MISSIONS.find(m => m.id === id);
+
+        document.getElementById("screen-map").style.display = "none";
+        document.getElementById("screen-gameplay").style.display = "block";
+        document.getElementById("mission-title").innerText = config.name;
+        
+        document.getElementById("hero-sprite").innerText = playerData.avatarSprite;
+        document.getElementById("hero-name-display").innerText = playerData.name;
+        document.getElementById("monster-sprite").innerText = config.sprite;
+        document.getElementById("monster-name-display").innerText = config.monster;
+        document.getElementById("monster-hp").style.width = "100%";
+        document.getElementById("npc-icon").innerText = config.npc.split(" ")[0];
+        document.getElementById("npc-dialogue").innerText = config.story;
+
+        document.getElementById("feedback-box").className = "feedback";
+        document.getElementById("hint-box").style.display = "none";
+
+        startTimer(config.time);
+        generateSubQuestion();
+    }
+
+    let selectedOptVal = null;
+
+    function generateSubQuestion() {
+        const container = document.getElementById("gameplay-content");
+        container.innerHTML = "";
+        document.getElementById("feedback-box").className = "feedback";
+        document.getElementById("hint-box").style.display = "none";
+        selectedOptVal = null;
+        selectedCard = null;
+
+        if (currentMission === 1) {
+            if (subQuestionIndex === 1) {
+                const isPLDV = Math.random() > 0.5;
+                const expr = isPLDV ? `${rand(2,7)}x + ${rand(1,6)}y = ${rand(10,40)}` : `${rand(2,6)}x² + ${rand(1,5)}y = ${rand(10,30)}`;
+                currentQuestionData = { ans: isPLDV ? "PLDV" : "BUKAN", hint: "PLDV hanya memiliki 2 variabel berpangkat 1." };
+                container.innerHTML = `
+                    <div class="question-box"><b>Tantangan 1/2:</b> Apakah persamaan berikut tergolong PLDV?<br><br><b>${expr}</b></div>
+                    <div class="options-grid">
+                        <button class="opt-btn" onclick="selectOpt(this, 'PLDV')">Ya (PLDV)</button>
+                        <button class="opt-btn" onclick="selectOpt(this, 'BUKAN')">Bukan PLDV</button>
+                    </div>`;
+            } else {
+                currentQuestionData = { type: "match_m1", hint: "Klik mantra -> klik Kotak Kategori untuk memindahkannya." };
+                container.innerHTML = `
+                    <div class="question-box"><b>Tantangan 2/2:</b> Kelompokkan mantra ke kotak yang benar!<br><small>(Klik mantra lalu klik Kotak Tujuan)</small></div>
+                    <div class="source-pool" id="source-pool" onclick="placeInZone(this)">
+                        <div class="match-card" data-correct="PLDV" onclick="selectCard(this, event)">${rand(2,5)}x + ${rand(1,5)}y = ${rand(5,20)}</div>
+                        <div class="match-card" data-correct="SPLDV" onclick="selectCard(this, event)">{ x+y=7, x-y=1 }</div>
+                        <div class="match-card" data-correct="PLDV" onclick="selectCard(this, event)">${rand(3,6)}a - b = ${rand(4,12)}</div>
+                        <div class="match-card" data-correct="SPLDV" onclick="selectCard(this, event)">{ 2x+y=10, x+2y=8 }</div>
+                    </div>
+                    <div class="target-zone" id="zone-pldv" onclick="placeInZone(this)"><h5>Kategori: PLDV</h5></div>
+                    <div class="target-zone" id="zone-spldv" onclick="placeInZone(this)"><h5>Kategori: SPLDV</h5></div>`;
+            }
+        }
+        else if (currentMission === 2) {
+            let x, y;
+            do {
+                x = rand(-6, 6);
+                y = rand(-6, 6);
+            } while (x === 0 && y === 0);
+
+            let a1, b1, a2, b2;
+            do {
+                a1 = rand(-5, 5); if (a1 === 0) a1 = 2;
+                b1 = rand(-5, 5); if (b1 === 0) b1 = -3;
+                a2 = rand(-5, 5); if (a2 === 0) a2 = -2;
+                b2 = rand(-5, 5); if (b2 === 0) b2 = 4;
+            } while ((a1 * b2) === (a2 * b1));
+
+            const c1 = (a1 * x) + (b1 * y);
+            const c2 = (a2 * x) + (b2 * y);
+
+            function formatEq(a, b, c) {
+                let termA = a === 1 ? 'x' : (a === -1 ? '-x' : `${a}x`);
+                let termB = '';
+                if (b > 0) termB = ` + ${b === 1 ? '' : b}y`;
+                else if (b < 0) termB = ` - ${Math.abs(b) === 1 ? '' : Math.abs(b)}y`;
+                
+                return `${termA}${termB} = ${c}`;
+            }
+
+            currentQuestionData = { 
+                x: x, 
+                y: y, 
+                hint: `Gunakan metode eliminasi/substitusi. Hati-hati dengan tanda negatif (-)!` 
+            };
+
+            container.innerHTML = `
+                <div class="question-box">
+                    <b>Tantangan ${subQuestionIndex}/2:</b> Cari nilai x dan y:<br><br>
+                    1) ${formatEq(a1, b1, c1)}<br>
+                    2) ${formatEq(a2, b2, c2)}
+                </div>
+                <p style="font-size:0.95rem;">
+                   Nilai x = <input type="number" id="ans-x" style="width:90px"> <br><br>
+                   Nilai y = <input type="number" id="ans-y" style="width:90px">
+                </p>`;
+        }
+        else if (currentMission === 3) {
+            const hBuku = rand(2, 6) * 1000, hPensil = rand(1, 4) * 1000;
+            const item1 = "Pedang Sihir", item2 = "Ramuan Nyawa";
+            const k1_a = rand(2, 4), k2_a = rand(1, 3);
+            const tot_a = (k1_a * hBuku) + (k2_a * hPensil);
+            const k1_b = 1, k2_b = rand(1, 2);
+            const tot_b = (k1_b * hBuku) + (k2_b * hPensil);
+
+            currentQuestionData = { x: hBuku, y: hPensil, hint: `Misalkan x = Harga ${item1}, y = Harga ${item2}.` };
+            container.innerHTML = `
+                <div class="question-box">
+                • ${k1_a} ${item1} & ${k2_a} ${item2} = Rp${tot_a.toLocaleString()}<br>
+                • ${k1_b} ${item1} & ${k2_b} ${item2} = Rp${tot_b.toLocaleString()}<br><br>
+                Tentukan harga 1 ${item1} (x) dan 1 ${item2} (y)!
+                </div>
+                <p>Harga 1 ${item1} (x) = Rp<input type="number" id="ans-x" style="width:110px"><br>
+                   Harga 1 ${item2} (y) = Rp<input type="number" id="ans-y" style="width:110px"></p>`;
+        }
+        else if (currentMission === 4) {
+            currentQuestionData = { type: "match_m4", hint: "Klik persamaan -> klik kotak jenis solusi yang sesuai!" };
+            container.innerHTML = `
+                <div class="question-box">Kelompokkan persamaan ke jenis solusinya!<br><small>(Klik kartu lalu klik Kotak Tujuan)</small></div>
+                <div class="source-pool" id="source-pool" onclick="placeInZone(this)">
+                    <div class="match-card" data-correct="SATU" onclick="selectCard(this, event)">{ x+y=4, x-y=2 }</div>
+                    <div class="match-card" data-correct="BANYAK" onclick="selectCard(this, event)">{ x+y=3, 2x+2y=6 }</div>
+                    <div class="match-card" data-correct="KOSONG" onclick="selectCard(this, event)">{ x+y=3, x+y=7 }</div>
+                    <div class="match-card" data-correct="SATU" onclick="selectCard(this, event)">{ 2x+y=5, x-y=1 }</div>
+                </div>
+                <div class="target-zone" id="zone-satu" data-type="SATU" onclick="placeInZone(this)"><h5>Jalan: Tepat Satu Solusi</h5></div>
+                <div class="target-zone" id="zone-banyak" data-type="BANYAK" onclick="placeInZone(this)"><h5>Jalan: Banyak Solusi</h5></div>
+                <div class="target-zone" id="zone-kosong" data-type="KOSONG" onclick="placeInZone(this)"><h5>Jalan: Tidak Ada Solusi</h5></div>`;
+        }
+        else if (currentMission === 5) {
+            const tMotor = 2000, tMobil = 5000;
+            const motor = rand(6, 12), mobil = rand(2, 6);
+            const totKendaraan = motor + mobil;
+            const totUang = (motor * tMotor) + (mobil * tMobil);
+
+            currentQuestionData = { x: motor, y: mobil, hint: "x + y = Total Armada, 2000x + 5000y = Total Pendapatan." };
+            container.innerHTML = `
+                <div class="question-box">
+                Terdapat ${totKendaraan} kendaraan terdiri dari Kuda (tarif Rp2.000) dan Kereta (tarif Rp5.000). Total koin = Rp${totUang.toLocaleString()}.<br><br>
+                Berapa jumlah Kuda (x) dan Kereta Perang (y)?</div>
+                <p>Jumlah Kuda (x) = <input type="number" id="ans-x" style="width:80px"><br>
+                   Jumlah Kereta (y) = <input type="number" id="ans-y" style="width:80px"></p>`;
+        }
+        else if (currentMission === 6) {
+            const r = rand(2, 5) * 1000, s = rand(3, 6) * 1000;
+            const tot1 = (14 * r) + (17 * s), tot2 = (8 * r) + (9 * s);
+            const pA_pB = (3 * r) + (4 * s);
+
+            currentQuestionData = { 
+                type: "tf_final", 
+                ans1: "B", ans2: "B", ans3: "B", ans4: "B",
+                hint: "Cari harga 1 Roti (x) dan 1 Susu (y) terlebih dahulu." 
+            };
+            container.innerHTML = `
+                <div class="question-box">
+                    Hari 1: 5 Paket A & 4 Paket B (Rp${tot1.toLocaleString()})<br>
+                    Hari 2: 3 Paket A & 2 Paket B (Rp${tot2.toLocaleString()})
+                </div>
+                <table class="tf-table">
+                    <tr><th>Pernyataan</th><th>Jawaban</th></tr>
+                    <tr><td>1. Model: 14x + 17y = ${tot1} & 8x + 9y = ${tot2}</td><td><select id="tf-1"><option value="">-</option><option value="B">B</option><option value="S">S</option></select></td></tr>
+                    <tr><td>2. Harga 1 Roti adalah Rp${r.toLocaleString()}</td><td><select id="tf-2"><option value="">-</option><option value="B">B</option><option value="S">S</option></select></td></tr>
+                    <tr><td>3. Harga 1 Susu adalah Rp${s.toLocaleString()}</td><td><select id="tf-3"><option value="">-</option><option value="B">B</option><option value="S">S</option></select></td></tr>
+                    <tr><td>4. Total 1 Paket A + 1 Paket B = Rp${pA_pB.toLocaleString()}</td><td><select id="tf-4"><option value="">-</option><option value="B">B</option><option value="S">S</option></select></td></tr>
+                </table>`;
+        }
+    }
+
+    function selectCard(card, e) {
+        e.stopPropagation();
+        document.querySelectorAll(".match-card").forEach(c => c.classList.remove("active-select"));
+        selectedCard = card;
+        card.classList.add("active-select");
+    }
+
+    function placeInZone(zone) {
+        if (selectedCard) {
+            zone.appendChild(selectedCard);
+            selectedCard.classList.remove("active-select");
+            selectedCard = null;
+        }
+    }
+
+    function selectOpt(btn, val) {
+        document.querySelectorAll(".opt-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        selectedOptVal = val;
+    }
+
+    function checkAnswer() {
+        let correct = false;
+
+        if (currentMission === 1) {
+            if (subQuestionIndex === 1) {
+                if (selectedOptVal === currentQuestionData.ans) correct = true;
+            } else {
+                let pldvCards = document.getElementById("zone-pldv").querySelectorAll(".match-card");
+                let spldvCards = document.getElementById("zone-spldv").querySelectorAll(".match-card");
+
+                let allCorrect = true;
+                if (pldvCards.length !== 2 || spldvCards.length !== 2) allCorrect = false;
+
+                pldvCards.forEach(c => { if(c.getAttribute("data-correct") !== "PLDV") allCorrect = false; });
+                spldvCards.forEach(c => { if(c.getAttribute("data-correct") !== "SPLDV") allCorrect = false; });
+
+                if (allCorrect) correct = true;
+            }
+        }
+        else if (currentMission === 2 || currentMission === 3 || currentMission === 5) {
+            const xElem = document.getElementById("ans-x");
+            const yElem = document.getElementById("ans-y");
+            if (xElem && yElem) {
+                const xVal = parseInt(xElem.value);
+                const yVal = parseInt(yElem.value);
+                if (xVal === currentQuestionData.x && yVal === currentQuestionData.y) correct = true;
+            }
+        }
+        else if (currentMission === 4) {
+            let zSatu = document.getElementById("zone-satu").querySelectorAll(".match-card");
+            let zBanyak = document.getElementById("zone-banyak").querySelectorAll(".match-card");
+            let zKosong = document.getElementById("zone-kosong").querySelectorAll(".match-card");
+
+            let ok = true;
+            if (zSatu.length !== 2 || zBanyak.length !== 1 || zKosong.length !== 1) ok = false;
+
+            zSatu.forEach(c => { if(c.getAttribute("data-correct") !== "SATU") ok = false; });
+            zBanyak.forEach(c => { if(c.getAttribute("data-correct") !== "BANYAK") ok = false; });
+            zKosong.forEach(c => { if(c.getAttribute("data-correct") !== "KOSONG") ok = false; });
+
+            if (ok) correct = true;
+        }
+        else if (currentMission === 6) {
+            const v1 = document.getElementById("tf-1").value;
+            const v2 = document.getElementById("tf-2").value;
+            const v3 = document.getElementById("tf-3").value;
+            const v4 = document.getElementById("tf-4").value;
+
+            if (v1 === currentQuestionData.ans1 && 
+                v2 === currentQuestionData.ans2 && 
+                v3 === currentQuestionData.ans3 && 
+                v4 === currentQuestionData.ans4) {
+                correct = true;
+            }
+        }
+
+        const fb = document.getElementById("feedback-box");
+        if (correct) {
+            playSound('hit');
+            fb.className = "feedback success";
+            fb.innerText = "✨ SERANGAN BERHASIL! Jawabanmu Benar!";
+            
+            monsterHPVal -= 50;
+            if (monsterHPVal < 0) monsterHPVal = 0;
+            document.getElementById("monster-hp").style.width = monsterHPVal + "%";
+
+            setTimeout(() => {
+                if (subQuestionIndex < 2 && currentMission <= 2) {
+                    subQuestionIndex++;
+                    generateSubQuestion();
+                } else {
+                    completeMission();
+                }
+            }, 1200);
+        } else {
+            playSound('wrong');
+            fb.className = "feedback error";
+            fb.innerText = "💥 SERANGAN MESELESET! Jawaban Salah.";
+            
+            const arena = document.querySelector(".battle-arena");
+            arena.classList.add("shaking");
+            setTimeout(() => arena.classList.remove("shaking"), 400);
+
+            deductLife();
+        }
+    }
+
+    function deductLife() {
+        playerData.lives--;
+        updateStats();
+        saveLocalStorage();
+
+        if (playerData.lives <= 0) {
+            alert("💀 Kamu Kehabisan Nyawa! Mengulang dari lokasi awal...");
+            playerData.lives = 3;
+            saveLocalStorage();
+            updateStats();
+            backToMap();
+        }
+    }
+
+    function showHint() {
+        const hBox = document.getElementById("hint-box");
+        hBox.innerText = "💡 Petunjuk: " + (currentQuestionData.hint || "Selesaikan dengan cermat.");
+        hBox.style.display = "block";
+    }
+
+    function completeMission() {
+        clearInterval(timerInterval);
+        
+        if (!playerData.completedMissions.includes(currentMission)) {
+            playerData.completedMissions.push(currentMission);
+            playerData.xp += 100;
+            playerData.coins += 50;
+            playerData.stars += 1;
+        }
+
+        if (currentMission === playerData.unlockedMission && playerData.unlockedMission < 6) {
+            playerData.unlockedMission++;
+        }
+
+        saveLocalStorage();
+        updateStats();
+
+        if (playerData.completedMissions.length >= 6) {
+            sendDataToSheet("TAMAT GAME");
+            document.getElementById("final-score").innerText = playerData.xp;
+            document.getElementById("final-tab-switches").innerText = playerData.tabSwitches;
+            
+            document.getElementById("screen-gameplay").style.display = "none";
+            document.getElementById("screen-complete").style.display = "block";
+        } else {
+            sendDataToSheet("SELESAI MISI " + currentMission);
+            alert("🎉 LOKASI BERHASIL DIBEBASKAN!");
+            backToMap();
+        }
+    }
+
+    function resetGame(confirmReset) {
+        if (confirmReset && !confirm("Apakah kamu yakin ingin mereset seluruh progres petualangan?")) return;
+        
+        clearInterval(timerInterval);
+        playerData = {
+            name: "", school: "", classGrade: "",
+            avatarSprite: "⚔️", avatarClass: "Satria",
+            lives: 3, xp: 0, coins: 0, stars: 0,
+            unlockedMission: 1, completedMissions: [], tabSwitches: 0
+        };
+        saveLocalStorage();
+        
+        document.getElementById("player-name").value = "";
+        document.getElementById("player-school").value = "";
+        document.getElementById("player-class").value = "";
+        
+        switchScreen("screen-identity");
+    }
+</script>
+</body>
+</html>
